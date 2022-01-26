@@ -32,6 +32,9 @@ class AbstractDeviceHandler:
 
     @classmethod
     def get_instance(cls):
+        if not cls.__instance:
+            cls()
+
         return cls.__instance
 
     async def connect(self):
@@ -57,43 +60,43 @@ class AbstractDeviceHandler:
             url = fdata.get('download')
             fullpath = os.path.abspath(os.path.join(location, filename))
 
-        if os.path.exists(fullpath):
-            with open(fullpath, 'rb') as f:
-                content = f.read()
+            if fullpath and os.path.exists(fullpath):
+                with open(fullpath, 'rb') as f:
+                    content = f.read()
+
+                    if type(content) == str:
+                        b = content.encode('utf-8')
+                    else:
+                        b = content
+
+                hexdigest = hashlib.sha256(b).hexdigest().lower()
+            else:
+                hexdigest = None
+
+            if fdata.get('sha256sum').lower() != hexdigest:
+                print('Downloading {}...'.format(url))
+                try:
+                    downdata = urllib.request.urlopen(url)
+                except FileNotFoundError:
+                    downdata = None
+            else:
+                print('Skipping {} (SHA256 sum match)...'.format(url))
+
+            if downdata:
+                content = downdata.read()
 
                 if type(content) == str:
                     b = content.encode('utf-8')
                 else:
                     b = content
 
-            hexdigest = hashlib.sha256(b).hexdigest().lower()
-        else:
-            hexdigest = None
+                hexdigest = hashlib.sha256(b).hexdigest().lower()
 
-        if fdata.get('sha256sum').lower() != hexdigest:
-            print('Downloading {}...'.format(url))
-            try:
-                downdata = urllib.request.urlopen(url)
-            except FileNotFoundError:
-                downdata = None
-        else:
-            print('Skipping {} (SHA256 sum match)...'.format(url))
+                if hexdigest == fdata.get('sha256sum').lower():
+                    mode = 'w' if type(content) == str else 'wb'
 
-        if downdata:
-            content = downdata.read()
-
-            if type(content) == str:
-                b = content.encode('utf-8')
-            else:
-                b = content
-
-            hexdigest = hashlib.sha256(b).hexdigest().lower()
-
-            if hexdigest == fdata.get('sha256sum').lower():
-                mode = 'w' if type(content) == str else 'wb'
-
-                with open(fullpath, mode) as f:
-                    f.write(content)
+                    with open(fullpath, mode) as f:
+                        f.write(content)
 
     async def fetch_config_data(self):
         raise NotImplementedError
@@ -102,14 +105,13 @@ class AbstractDeviceHandler:
         return self.config
 
     def get_daemons(self):
-        return [['python', 'mockdaemon.py']]
         if type(self.config) == dict:
             return self.config.get('daemons') or []
         else:
             return []
 
     def get_environ(self):
-        return self.config['environ']
+        return self.config.get('environ') or {}
 
     def get_is_connected(self):
         raise NotImplementedError

@@ -1,5 +1,6 @@
 import asyncio
 import os
+import sys
 
 from datetime import datetime
 
@@ -18,18 +19,13 @@ async def run_proc(cl):
         daemons.append(await asyncio.create_subprocess_exec(
             *i,
             env=os.environ.update(cl.get_environ()),
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE
+            stdout=sys.stdout,
+            stderr=sys.stderr,
         ))
         print(*i, 'as', daemons[-1])
 
     while not cl.restart and len(daemons) > 0:
         for i in daemons:
-            bline = await i.stdout.readline()
-            sline = bline.decode('utf-8').strip()
-
-            print('{} {}: {}'.format(datetime.now(), i, sline))
-
             if i.returncode is not None:
                 cl.restart = True
 
@@ -40,6 +36,8 @@ async def run_proc(cl):
     for i in daemons:
         if i.returncode is None:
             i.terminate()
+
+    cl.restart = True
 
 
 async def sync_loop(cl):

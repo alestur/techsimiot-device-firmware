@@ -71,7 +71,7 @@ class MockDeviceHandler(AbstractDeviceHandler):
 class ClientTestCase(unittest.IsolatedAsyncioTestCase):
 
     def setUp(self) -> None:
-        self.cl = MockDeviceHandler()
+        self.cl = MockDeviceHandler.get_instance()
 
     def tearDown(self) -> None:
         del self.cl
@@ -93,7 +93,7 @@ class ClientTestCase(unittest.IsolatedAsyncioTestCase):
 class ConfigTestCase(unittest.IsolatedAsyncioTestCase):
 
     def setUp(self) -> None:
-        self.cl = MockDeviceHandler()
+        self.cl = MockDeviceHandler.get_instance()
 
     def tearDown(self) -> None:
         del self.cl
@@ -128,7 +128,7 @@ class ConfigTestCase(unittest.IsolatedAsyncioTestCase):
 class UpdateTestCase(unittest.IsolatedAsyncioTestCase):
 
     def setUp(self) -> None:
-        self.cl = MockDeviceHandler()
+        self.cl = MockDeviceHandler.get_instance()
 
         pwd = os.curdir
 
